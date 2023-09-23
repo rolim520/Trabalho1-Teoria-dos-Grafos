@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.nxc": "c",
+        "iosfwd": "cpp",
+        "ostream": "cpp",
+        "iostream": "cpp",
+        "vector": "cpp",
+        "queue": "cpp",
+        "xstring": "cpp"
+    }
+}
