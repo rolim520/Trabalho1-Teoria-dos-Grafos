@@ -6,7 +6,8 @@
 #include <string>
 #include <set>
 #include <queue>
-#include<stack>
+#include <stack>
+#include <typeinfo>
 
 enum class TipoDeGrafo {
     Matriz,
@@ -22,60 +23,39 @@ struct Node {
     Node(int v) : valor(v), proximo(nullptr) {}
 };
 
-// Função para verificar e remover repetições
-void removeRepeticoes(string nomeArquivoEntrada, string nomeArquivoSaida) {
-    ifstream arquivoEntrada(nomeArquivoEntrada);
-    if (!arquivoEntrada.is_open()) {
-        cerr << "Erro ao abrir o arquivo de entrada." << endl;
-        return;
-    }
-
-    ofstream arquivoSaida(nomeArquivoSaida);
-    if (!arquivoSaida.is_open()) {
-        cerr << "Erro ao abrir o arquivo de saída." << endl;
-        return;
-    }
-
-    set<pair<int, int>> conjuntoArestas;  // Conjunto para armazenar as arestas únicas
-    vector<pair<int, int>> repeticoes;  // Vetor para armazenar as repetições
-
-    int numVertices;
-    arquivoEntrada >> numVertices;
-    arquivoSaida << numVertices << endl;
-
-    int vertice1, vertice2;
-    while (arquivoEntrada >> vertice1 >> vertice2) {
-        if (vertice1 == vertice2) {
-            repeticoes.push_back({vertice1, vertice2});  // Laço (vértice para si mesmo)
-        } else if (conjuntoArestas.count({vertice2, vertice1}) || conjuntoArestas.count({vertice1, vertice2})) {
-            repeticoes.push_back({vertice1, vertice2});  // Aresta duplicada ou na ordem inversa
-        } else {
-            conjuntoArestas.insert({vertice1, vertice2});
-            conjuntoArestas.insert({vertice2, vertice1});
-            arquivoSaida << vertice1 << " " << vertice2 << endl;
-        }
-    }
-
-    arquivoEntrada.close();
-    arquivoSaida.close();
-
-    // Exibir repetições encontradas
-    if (!repeticoes.empty()) {
-        // cout << "Repetiçoes encontradas e removidas:" << endl;
-        for (const auto& repeticao : repeticoes) {
-            // cout << "Repetiçao: " << repeticao.first << " " << repeticao.second << endl;
-        }
-        cout << "Repeticoes encontradas e removidas." << endl;
+// Função para inserir um vértice em ordem crescente em uma lista
+void insiraEmOrdem(Node*& lista, int vertice) {
+    Node* novoNo = new Node(vertice);
+    if (!lista || lista->valor >= vertice) {
+        novoNo->proximo = lista;
+        lista = novoNo;
     } else {
-        cout << "Nenhuma repetiçao encontrada." << endl;
+        Node* atual = lista;
+        while (atual->proximo && atual->proximo->valor < vertice) {
+            atual = atual->proximo;
+        }
+        novoNo->proximo = atual->proximo;
+        atual->proximo = novoNo;
     }
+}
+
+// Função para verificar se a aresta já existe na lista de adjacência
+bool existeArestaLista(Node* lista, int vertice2) {
+    Node* atual = lista;
+    while (atual != nullptr) {
+        if (atual->valor == vertice2) {
+            return true; // A aresta já existe na lista
+        }
+        atual = atual->proximo;
+    }
+    return false; // A aresta não existe na lista
 }
 
 class Graph {
 public:
     // Atributos
     int numeroDeVertices;
-    vector<vector<int>> matrizAdj;
+    vector<vector<bool>> matrizAdj;
     vector<Node*> listaAdj;
     TipoDeGrafo tipoDeGrafo;
 
@@ -85,11 +65,6 @@ public:
         // Abra o arquivo para leitura
         ifstream arquivo(filename);
 
-        // Verifique se o arquivo foi aberto com sucesso
-        if (!arquivo.is_open()) {
-            cerr << "Erro ao abrir o arquivo." << endl;
-        }
-
         // Variável para armazenar cada linha do arquivo
         string linha;
         // Ler a primeira linha do arquivo e salvar o número de vértices
@@ -97,8 +72,8 @@ public:
         numeroDeVertices = stoi(linha);
 
         if (tipoDeGrafo == TipoDeGrafo::Matriz) {
-            // Inicializa a matriz de adjacência com 0
-            matrizAdj = vector<vector<int>>(numeroDeVertices, vector<int>(numeroDeVertices, 0));
+
+            matrizAdj = vector<vector<bool>>(numeroDeVertices, vector<bool>(numeroDeVertices, false));
 
             // Ler e preencher a matriz de adjacência
             while (getline(arquivo, linha)) {
@@ -107,16 +82,19 @@ public:
                 int numero1, numero2;
                 // Tente extrair os dois números da linha
                 if (iss >> numero1 >> numero2) {
-                    // Faça o que quiser com os números
-                    matrizAdj[numero1-1][numero2-1] = 1;
-                    matrizAdj[numero2-1][numero1-1] = 1;
-
+                    // Verifique se a aresta não é de um vértice para si mesmo
+                    if (numero1 != numero2) {
+                        // Verifique se a aresta não foi adicionada anteriormente
+                        if (!matrizAdj[numero1-1][numero2-1]) {
+                            // Faça o que quiser com os números
+                            matrizAdj[numero1 - 1][numero2 - 1] = true;
+                            matrizAdj[numero2 - 1][numero1 - 1] = true;
+                        }
+                    }
                 }
             }
-
             arquivo.close();
         }
-        
         else if (tipoDeGrafo == TipoDeGrafo::Lista){
             listaAdj = vector<Node*>(numeroDeVertices, nullptr);
 
@@ -127,21 +105,20 @@ public:
                 int numero1, numero2;
                 // Tente extrair os dois números da linha
                 if (iss >> numero1 >> numero2) {
-                    // Adiciona a aresta aos vértices correspondentes na lista de adjacência
-                    // Crie um novo nó para o vértice de destino e insira-o no início da lista
-                    Node* novoNo1 = new Node(numero2-1);
-                    novoNo1->proximo = listaAdj[numero1-1];
-                    listaAdj[numero1-1] = novoNo1;
-
-                    Node* novoNo2 = new Node(numero1-1);
-                    novoNo2->proximo = listaAdj[numero2-1];
-                    listaAdj[numero2-1] = novoNo2;
-
+                    // Verifique se a aresta não é de um vértice para si mesmo
+                    if (numero1 != numero2) {
+                        // Verifique se a aresta não foi adicionada anteriormente
+                        if (!existeArestaLista(listaAdj[numero1-1], numero2-1)) {
+                            // Insira os vértices em ordem crescente na lista de adjacência
+                            insiraEmOrdem(listaAdj[numero1 - 1], numero2 - 1);
+                            insiraEmOrdem(listaAdj[numero2 - 1], numero1 - 1);
+                        }
+                    }    
                 }
             }
-
             arquivo.close();
         }
+        cout << "Grafo criado com sucesso." << endl;
     }
 
     int numVertices() {
@@ -173,6 +150,7 @@ public:
             // Como sao grafos nao direcionados, cada aresta e contada duas vezes.
             return numArestas/2;
         }
+        cout << "Flag4" << endl;
     }
 
     int grauMinimo() {
@@ -627,10 +605,9 @@ public:
 };
 
 int main(){
-    //removeRepeticoes("grafo_2.txt", "grafo_sem_repeticao.txt");
-    // Graph grafoLista("grafo_sem_repeticao.txt", TipoDeGrafo::Lista);
-    Graph grafoMatriz("grafo_sem_repeticao.txt", TipoDeGrafo::Matriz);
+    // Graph grafoMatriz("grafo_2.txt", TipoDeGrafo::Matriz);
+    Graph grafoLista("grafo_6.txt", TipoDeGrafo::Lista);
 
-    grafoMatriz.saida();
-    //grafoLista.saida();
+    // cout << grafoMatriz.numArestas() << endl;
+    grafoLista.saida();
 }

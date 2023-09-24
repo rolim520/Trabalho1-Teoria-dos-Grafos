@@ -26,7 +26,7 @@ def check_duplicate_self_reverse_edges(filename):
 
     return duplicates, self_edges, reverse_edges
 
-filename = "grafo_sem_repeticao.txt"  # Substitua com o nome do seu arquivo
+filename = "grafo_1.txt"  # Substitua com o nome do seu arquivo
 duplicates, self_edges, reverse_edges = check_duplicate_self_reverse_edges(filename)
 
 total_anomalies = len(duplicates) + len(self_edges) + len(reverse_edges)
