@@ -8,6 +8,7 @@
 #include <queue>
 #include <stack>
 #include <typeinfo>
+#include <ctime>
 
 enum class TipoDeGrafo {
     Matriz,
@@ -16,6 +17,7 @@ enum class TipoDeGrafo {
 
 using namespace std;
 
+// Classe para representar um nó de uma lista de adjacência
 struct Node {
     int valor;
     Node* proximo;
@@ -23,8 +25,8 @@ struct Node {
     Node(int v) : valor(v), proximo(nullptr) {}
 };
 
-// Função para inserir um vértice em ordem crescente em uma lista
-void insiraEmOrdem(Node*& lista, int vertice) {
+// Função para inserir um vértice em ordem crescente em uma lista de adjacência
+void orderedInsertion(Node*& lista, int vertice) {
     Node* novoNo = new Node(vertice);
     if (!lista || lista->valor >= vertice) {
         novoNo->proximo = lista;
@@ -44,11 +46,11 @@ bool existeArestaLista(Node* lista, int vertice2) {
     Node* atual = lista;
     while (atual != nullptr) {
         if (atual->valor == vertice2) {
-            return true; // A aresta já existe na lista
+            return true;
         }
         atual = atual->proximo;
     }
-    return false; // A aresta não existe na lista
+    return false;
 }
 
 class Graph {
@@ -62,31 +64,30 @@ public:
     // Construtor
     Graph(string filename, TipoDeGrafo graphType) {
         tipoDeGrafo = graphType;
-        // Abra o arquivo para leitura
-        ifstream arquivo(filename);
 
+        ifstream arquivo(filename);
         // Variável para armazenar cada linha do arquivo
         string linha;
-        // Ler a primeira linha do arquivo e salvar o número de vértices
+        // Lê o numero de vertices na primeira linha do arquivo
         getline(arquivo, linha);
         numeroDeVertices = stoi(linha);
 
         if (tipoDeGrafo == TipoDeGrafo::Matriz) {
-
+            
+            // Inicializa a matriz de adjacência como uma matriz de bool
             matrizAdj = vector<vector<bool>>(numeroDeVertices, vector<bool>(numeroDeVertices, false));
 
-            // Ler e preencher a matriz de adjacência
+            // Le o arquivo e constrói a matriz de adjacência
             while (getline(arquivo, linha)) {
                 istringstream iss(linha);
             
                 int numero1, numero2;
-                // Tente extrair os dois números da linha
+                // Extrai os dois números da linha
                 if (iss >> numero1 >> numero2) {
-                    // Verifique se a aresta não é de um vértice para si mesmo
+                    // Verifica se a aresta não é de um vértice para si mesmo
                     if (numero1 != numero2) {
-                        // Verifique se a aresta não foi adicionada anteriormente
+                        // Verifica se a aresta não foi adicionada anteriormente
                         if (!matrizAdj[numero1-1][numero2-1]) {
-                            // Faça o que quiser com os números
                             matrizAdj[numero1 - 1][numero2 - 1] = true;
                             matrizAdj[numero2 - 1][numero1 - 1] = true;
                         }
@@ -98,20 +99,19 @@ public:
         else if (tipoDeGrafo == TipoDeGrafo::Lista){
             listaAdj = vector<Node*>(numeroDeVertices, nullptr);
 
-            // Ler e construir a lista de adjacência
+            // Le o arquivo e constrói a lista de adjacência
             while (getline(arquivo, linha)) {
                 istringstream iss(linha);
 
                 int numero1, numero2;
-                // Tente extrair os dois números da linha
                 if (iss >> numero1 >> numero2) {
-                    // Verifique se a aresta não é de um vértice para si mesmo
+                    // Verifica se a aresta não é de um vértice para si mesmo
                     if (numero1 != numero2) {
-                        // Verifique se a aresta não foi adicionada anteriormente
+                        // Verifica se a aresta não foi adicionada anteriormente
                         if (!existeArestaLista(listaAdj[numero1-1], numero2-1)) {
-                            // Insira os vértices em ordem crescente na lista de adjacência
-                            insiraEmOrdem(listaAdj[numero1 - 1], numero2 - 1);
-                            insiraEmOrdem(listaAdj[numero2 - 1], numero1 - 1);
+                            // Insere os vértices em ordem crescente na lista de adjacência
+                            orderedInsertion(listaAdj[numero1 - 1], numero2 - 1);
+                            orderedInsertion(listaAdj[numero2 - 1], numero1 - 1);
                         }
                     }    
                 }
@@ -128,7 +128,7 @@ public:
     int numArestas() {
         int numArestas = 0;
         if (tipoDeGrafo == TipoDeGrafo::Matriz) {
-            // Verifique a matriz de adjacencia para contar as arestas
+            // Itera sobre o triangulo superior da matriz de adjacencia
             for (int i = 0; i < numeroDeVertices; i++) {
                 for (int j = i+1; j < numeroDeVertices; j++) {
                     if (matrizAdj[i][j] == 1){
@@ -139,7 +139,7 @@ public:
             return numArestas;
         }
         else if (tipoDeGrafo == TipoDeGrafo::Lista){
-            // Para uma lista de adjacencia
+            // Itera sobre a as listas encadeadas da lista de adjacencia
             for (int i = 0; i < numeroDeVertices; i++) {
                 Node* currentNode = listaAdj[i];
                 while (currentNode != nullptr) {
@@ -147,13 +147,14 @@ public:
                     currentNode = currentNode->proximo;
                 }
             }
-            // Como sao grafos nao direcionados, cada aresta e contada duas vezes.
+            // É preciso dividir por dois pois cada aresta foi contada duas vezes
             return numArestas/2;
         }
         cout << "Flag4" << endl;
     }
 
     int grauMinimo() {
+        //
         int grauMin = numeroDeVertices;
         if (tipoDeGrafo == TipoDeGrafo::Matriz) {
             for (int i = 0; i < numeroDeVertices; i++) {
@@ -218,8 +219,8 @@ public:
     }
 
     int grauMedio() {
-        int grauMid = 2*numArestas()/numVertices(); 
-        return grauMid;
+        // Retorna o dobro do número de arestas dividido pelo número de vértices
+        return 2*numArestas()/numVertices();
     }
 
     int medianaDeGrau() {
@@ -255,10 +256,10 @@ public:
 
         int tamanho = graus.size();
         if (tamanho % 2 == 1) {
-            // Se o número de vértices for ímpar, a mediana é o valor central
+            // Se o número de vértices for ímpar, pegamos a mediana como o valor central
             return graus[tamanho / 2];
         } else {
-            // Se o número de vértices for par, a mediana é a média dos dois valores centrais
+            // Se o número de vértices for par, pegamos a mediana como a média dos dois valores centrais
             int meio1 = graus[(tamanho - 1) / 2];
             int meio2 = graus[tamanho / 2];
             return (meio1 + meio2) / 2;
@@ -268,7 +269,7 @@ public:
     void BFS(int verticeInicial) {
         // Inicializa o vetor de marcação, vetor de pais e vetor de níveis
         vector<int> vetorDeMarcacao(numeroDeVertices, 0);
-        vector<int> vetorDePais(numeroDeVertices, 0);
+        vector<int> vetorDePais(numeroDeVertices, -1);
         vector<int> vetorDeNiveis(numeroDeVertices, 0);
         queue<int> fila;
 
@@ -320,6 +321,7 @@ public:
                     currentNode = currentNode->proximo;  
                 }
             }
+            cout << vetorDePais[10-1]+1 << " " << vetorDePais[20-1]+1 << " " << vetorDePais[30-1]+1 << endl;
             // Após a execução do BFS, imprime os resultados em um arquivo de texto
             ofstream arquivoResultado("resultado_bfs_lista.txt");
             for (int i = 0; i < numeroDeVertices; i++) {
@@ -334,7 +336,7 @@ public:
     void DFS(int verticeInicial) {
         // Inicializa o vetor de marcação, vetor de pais e vetor de níveis
         vector<int> vetorDeMarcacao(numeroDeVertices, 0);
-        vector<int> vetorDePais(numeroDeVertices, 0);
+        vector<int> vetorDePais(numeroDeVertices, -1);
         vector<int> vetorDeNiveis(numeroDeVertices, 0);
         stack<int> pilha;
 
@@ -386,6 +388,7 @@ public:
                     currentNode = currentNode->proximo;  
                 }
             }
+            cout << vetorDePais[10-1]+1 << " " << vetorDePais[20-1]+1 << " " << vetorDePais[30-1]+1 << endl;
             // Após a execução do BFS, imprime os resultados em um arquivo de texto
             ofstream arquivoResultado("resultado_dfs_lista.txt");
             for (int i = 0; i < numeroDeVertices; i++) {
@@ -500,7 +503,64 @@ public:
             for (int i = 0; i < numeroDeVertices; i++) {
                 diametro = max(diametro, vetorDeNiveis[i]);
             }
-            cout << verticeInicial << " " << diametro << endl;
+            // cout << verticeInicial << " " << diametro << endl;
+        }
+    
+    return diametro;
+    }
+
+    int diametroAprox(int numTestes){
+        int diametro = 0;
+        for (int i = 0; i < numTestes; i++) {
+            int verticeAleatorio = rand() % numeroDeVertices + 1;
+            // Inicializa o vetor de marcação, vetor de pais e vetor de níveis
+            vector<int> vetorDeMarcacao(numeroDeVertices, 0);
+            vector<int> vetorDeNiveis(numeroDeVertices, 0);
+            queue<int> fila;
+
+            vetorDeNiveis[verticeAleatorio-1] = 0;
+            vetorDeMarcacao[verticeAleatorio-1] = 1;
+            fila.push(verticeAleatorio-1);
+
+            if (tipoDeGrafo == TipoDeGrafo::Matriz) {
+                // Enquanto a fila não estiver vazia
+                while(!fila.empty()){
+                    // Retira o primeiro elemento da fila
+                    int v = fila.front();
+                    fila.pop();
+                    // Percorre os vértices adjacentes ao vértice retirado da fila
+                    for(int i = 0; i < numeroDeVertices; i++){
+                        if (matrizAdj[v][i] == 1 && vetorDeMarcacao[i] == 0){
+                            // Marca o vértice como visitado e o adiciona à fila
+                            vetorDeMarcacao[i] = 1;
+                            fila.push(i);
+                            vetorDeNiveis[i] = vetorDeNiveis[v]+1;
+                        }
+                    }
+                }
+            }
+            else if (tipoDeGrafo == TipoDeGrafo::Lista){
+                while(!fila.empty()){
+                    // Retira o primeiro elemento da fila
+                    int v = fila.front();
+                    fila.pop();
+                    Node* currentNode = listaAdj[v];
+                    while (currentNode != nullptr) {
+                        if (vetorDeMarcacao[currentNode->valor] == 0) {
+                            // Marca o vértice como visitado e o adiciona à fila
+                            vetorDeMarcacao[currentNode->valor] = 1;
+                            fila.push(currentNode->valor);
+                            vetorDeNiveis[currentNode->valor] = vetorDeNiveis[v]+1;
+                        }
+                        currentNode = currentNode->proximo;  
+                    }
+                }
+            }
+            // Encontrar o maior valor em vetorDeNiveis
+            for (int i = 0; i < numeroDeVertices; i++) {
+                diametro = max(diametro, vetorDeNiveis[i]);
+            }
+            // cout << verticeInicial << " " << diametro << endl;
         }
     
     return diametro;
@@ -511,8 +571,7 @@ public:
         vector<int> componenteAtual;
         vector<int> vetorDeMarcacao(numeroDeVertices, 0);
         queue<int> fila;
-
-        // 
+        
         int verticeInicial = -1;
         for (int i = 0; i < numeroDeVertices; i++){
             if (vetorDeMarcacao[i] == 0){
@@ -573,10 +632,8 @@ public:
             }
         }
 
-        // Sort components by size in descending order
         sort(componentes.begin(), componentes.end(), [](const vector<int>& a, const vector<int>& b) {return a.size() > b.size();});
         
-        // Após a execução do BFS, imprime os resultados em um arquivo de texto
         ofstream arquivoResultado("Arquivo_resultado.txt", ios::app);
         arquivoResultado << "Numero de componentes: " << componentes.size() << endl;
         
@@ -604,10 +661,83 @@ public:
     }
 };
 
-int main(){
-    // Graph grafoMatriz("grafo_2.txt", TipoDeGrafo::Matriz);
-    Graph grafoLista("grafo_6.txt", TipoDeGrafo::Lista);
+using namespace std;
 
-    // cout << grafoMatriz.numArestas() << endl;
-    grafoLista.saida();
+int main() {
+    const int numGraphs = 6; // Número total de arquivos de grafo
+    int limiteIteracoes = 10000; // Limite de iterações para o diâmetro aproximado
+
+    ofstream arquivoResultados("diametrosAprox2.txt", ios::app);
+
+    for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
+        string nomeArquivo = "grafo_" + to_string(graphIndex) + ".txt";
+        Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista);
+
+        // Calcule o diâmetro aproximado do grafo com o limite de iterações
+        int diametroAproximado = grafoLista.diametroAprox(limiteIteracoes);
+
+        // Calcule o diâmetro exato do grafo
+        // int diametroExato = grafoLista.diametro();
+
+        // Escreva os resultados no arquivo à medida que são calculados
+        arquivoResultados << "Grafo " << graphIndex << ":" << endl;
+        arquivoResultados << "Diâmetro Aproximado (com limite de " << limiteIteracoes << " iterações): " << diametroAproximado << endl;
+        // arquivoResultados << "Diâmetro Exato: " << diametroExato << endl;
+        arquivoResultados << "----------------------------------------" << endl;
+    }
+
+    arquivoResultados.close();
+
+    return 0;
 }
+
+
+// Calculo do tempo medio de execucao do BFS e DFS para cada grafo
+/*
+int main() {
+    const int numGraphs = 6;
+    const int numTests = 100;
+
+    ofstream arquivoBFS("resultado_bfs.txt");
+    ofstream arquivoDFS("resultado_dfs.txt");
+
+    for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
+        string nomeArquivo = "grafo_" + to_string(graphIndex) + ".txt";
+        Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista);
+
+        double elapsed_time = 0;
+        srand(static_cast<unsigned int>(time(nullptr)));
+
+        for (int i = 0; i < numTests; i++) {
+            int numVertices = grafoLista.numVertices();
+            int verticeAleatorio = rand() % numVertices + 1;
+
+            clock_t start_time = clock();
+            grafoLista.BFS(verticeAleatorio);
+            clock_t end_time = clock();
+            elapsed_time += static_cast<double>(end_time - start_time) / CLOCKS_PER_SEC;
+        }
+
+        arquivoBFS << "Tempo médio para BFS " << graphIndex << ": " << elapsed_time / numTests << " segundos" << endl;
+
+        elapsed_time = 0;
+
+        for (int i = 0; i < numTests; i++) {
+            int numVertices = grafoLista.numVertices();
+            int verticeAleatorio = rand() % numVertices + 1;
+
+            clock_t start_time = clock();
+            grafoLista.DFS(verticeAleatorio);
+            clock_t end_time = clock();
+            elapsed_time += static_cast<double>(end_time - start_time) / CLOCKS_PER_SEC;
+        }
+
+        arquivoDFS << "Tempo médio para DFS " << graphIndex << ": " << elapsed_time / numTests << " segundos" << endl;
+    }
+
+    arquivoBFS.close();
+    arquivoDFS.close();
+
+    return 0;
+}
+*/
