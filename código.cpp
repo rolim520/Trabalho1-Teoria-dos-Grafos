@@ -351,14 +351,14 @@ public:
                 // Retira o elemento do topo da pilha
                 int v = pilha.top();
                 pilha.pop();
-                // Percorre os vértices adjacentes ao vértice retirado da fila
-                for(int i = 0; i < numeroDeVertices; i++){
-                    if (matrizAdj[v][i] == 1 && vetorDeMarcacao[i] == 0){
-                        // Marca o vértice como visitado e o adiciona à fila
-                        vetorDeMarcacao[i] = 1;
-                        pilha.push(i);
-                        vetorDePais[i] = v;
-                        vetorDeNiveis[i] = vetorDeNiveis[v]+1;
+                if (vetorDeMarcacao[v] == 0){
+                    vetorDeMarcacao[v] = 1;
+                    for(int i = 0; i < numeroDeVertices; i++){
+                        if (matrizAdj[v][i] == 1) {
+                            pilha.push(i);
+                            vetorDePais[i] = v;
+                            vetorDeNiveis[i] = vetorDeNiveis[v]+1;
+                        }
                     }
                 }
             }
@@ -376,16 +376,15 @@ public:
                 // Retira o primeiro elemento da fila
                 int v = pilha.top();
                 pilha.pop();
-                Node* currentNode = listaAdj[v];
-                while (currentNode != nullptr) {
-                    if (vetorDeMarcacao[currentNode->valor] == 0) {
-                        // Marca o vértice como visitado e o adiciona à fila
-                        vetorDeMarcacao[currentNode->valor] = 1;
+                if (vetorDeMarcacao[v] == 0){
+                    vetorDeMarcacao[v] = 1;
+                    Node* currentNode = listaAdj[v];
+                    while (currentNode != nullptr) {
                         pilha.push(currentNode->valor);
                         vetorDePais[currentNode->valor] = v;
                         vetorDeNiveis[currentNode->valor] = vetorDeNiveis[v]+1;
+                        currentNode = currentNode->proximo;  
                     }
-                    currentNode = currentNode->proximo;  
                 }
             }
             cout << vetorDePais[10-1]+1 << " " << vetorDePais[20-1]+1 << " " << vetorDePais[30-1]+1 << endl;
@@ -664,13 +663,13 @@ public:
 using namespace std;
 
 int main() {
-    const int numGraphs = 6; // Número total de arquivos de grafo
-    int limiteIteracoes = 10000; // Limite de iterações para o diâmetro aproximado
+    const int numGraphs = 1; // Número total de arquivos de grafo
+    int limiteIteracoes = 600; // Limite de iterações para o diâmetro aproximado
 
-    ofstream arquivoResultados("diametrosAprox2.txt", ios::app);
+    ofstream arquivoResultados("diametrosAprox.txt", ios::app);
 
     for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
-        string nomeArquivo = "grafo_" + to_string(graphIndex) + ".txt";
+        string nomeArquivo = "grafo_6.txt";
         Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista);
 
         // Calcule o diâmetro aproximado do grafo com o limite de iterações
@@ -680,7 +679,7 @@ int main() {
         // int diametroExato = grafoLista.diametro();
 
         // Escreva os resultados no arquivo à medida que são calculados
-        arquivoResultados << "Grafo " << graphIndex << ":" << endl;
+        arquivoResultados << "Grafo " << "6" << ":" << endl;
         arquivoResultados << "Diâmetro Aproximado (com limite de " << limiteIteracoes << " iterações): " << diametroAproximado << endl;
         // arquivoResultados << "Diâmetro Exato: " << diametroExato << endl;
         arquivoResultados << "----------------------------------------" << endl;
