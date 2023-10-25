@@ -756,7 +756,7 @@ public:
                 atual = atual->proximo;
             }
         }
-        
+        /*
         // Após a execução do BFS, imprime os resultados em um arquivo de texto
         ofstream arquivoResultado("resultado_dijkstra_com_heap.txt");
         for (int i = 0; i < numeroDeVertices; i++) {
@@ -783,6 +783,7 @@ public:
         }
         arquivoResultado.close();
         
+        */
     }
 
 
@@ -824,7 +825,7 @@ int main() {
 
     for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
         string nomeArquivo = "grafo_W_" + to_string(graphIndex) + ".txt";
-        //string nomeArquivo = "grafo_W_5.txt";
+        // string nomeArquivo = "grafo_W_4.txt";
         Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista, true);
 
         double elapsed_time = 0;
