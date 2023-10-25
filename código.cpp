@@ -59,6 +59,7 @@ class Graph {
 public:
     // Atributos
     int numeroDeVertices;
+    bool pesosNegativos = false;
     vector<vector<bool>> matrizAdj;
     vector<Node*> listaAdj;
     TipoDeGrafo tipoDeGrafo;
@@ -88,6 +89,9 @@ public:
                     if (numero1 != numero2) {
                         // Verifica se a aresta não foi adicionada anteriormente
                         if (!existeArestaLista(listaAdj[numero1-1], numero2-1)) {
+                            if (peso < 0) {
+                                pesosNegativos = true;
+                            }
                             // Insere os vértices em ordem crescente na lista de adjacência
                             orderedInsertion(listaAdj[numero1 - 1], numero2 - 1, peso);
                             orderedInsertion(listaAdj[numero2 - 1], numero1 - 1, peso);
@@ -693,6 +697,10 @@ public:
     }
 
     void dijkstraSemHeap(int verticeInicial) {
+        if (pesosNegativos == true) {
+            cout << "O grafo possui pesos negativos. A biblioteca ainda nao implementa caminhos minimos com pesos negativos." << endl;
+            return;
+        }
         vector<float> distancia(numeroDeVertices, numeric_limits<float>::infinity());
         vector<int> pai(numeroDeVertices, -1);
         vector<bool> visitado(numeroDeVertices, false);
@@ -728,6 +736,10 @@ public:
     }
 
     void dijkstraComHeap(int verticeInicial) {
+        if (pesosNegativos == true) {
+            cout << "O grafo possui pesos negativos. A biblioteca ainda nao implementa caminhos minimos com pesos negativos." << endl;
+            return;
+        }
         vector<float> distancia(numeroDeVertices, numeric_limits<float>::infinity());
         vector<int> pai(numeroDeVertices, -1);
         vector<bool> visitado(numeroDeVertices, false);
@@ -756,7 +768,7 @@ public:
                 atual = atual->proximo;
             }
         }
-        /*
+        
         // Após a execução do BFS, imprime os resultados em um arquivo de texto
         ofstream arquivoResultado("resultado_dijkstra_com_heap.txt");
         for (int i = 0; i < numeroDeVertices; i++) {
@@ -783,7 +795,7 @@ public:
         }
         arquivoResultado.close();
         
-        */
+        
     }
 
 
@@ -803,16 +815,16 @@ public:
 
 using namespace std;
 
+/*
+int main() {
 
-int main2() {
-
-    Graph grafoLista("rede_colaboracao.txt", TipoDeGrafo::Lista, true);
+    Graph grafoLista("grafo_W_1.txt", TipoDeGrafo::Lista, true);
     // grafoLista.dijkstraSemHeap(1);
-    grafoLista.dijkstraComHeap(2722);
+    grafoLista.dijkstraComHeap(10);
 
     return 0;
 }
-
+*/
 
 // Calculo do tempo medio de execucao do BFS e DFS para cada grafo
 
@@ -825,7 +837,7 @@ int main() {
 
     for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
         string nomeArquivo = "grafo_W_" + to_string(graphIndex) + ".txt";
-        // string nomeArquivo = "grafo_W_4.txt";
+        // string nomeArquivo = "grafo_W_1.txt";
         Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista, true);
 
         double elapsed_time = 0;
