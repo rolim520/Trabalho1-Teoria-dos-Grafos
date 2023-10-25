@@ -9,6 +9,7 @@
 #include <stack>
 #include <typeinfo>
 #include <ctime>
+#include <limits>
 
 enum class TipoDeGrafo {
     Matriz,
@@ -21,13 +22,14 @@ using namespace std;
 struct Node {
     int valor;
     Node* proximo;
+    float peso;
 
-    Node(int v) : valor(v), proximo(nullptr) {}
+    Node(int v, float p) : valor(v), peso(p), proximo(nullptr) {}
 };
 
 // Função para inserir um vértice em ordem crescente em uma lista de adjacência
-void orderedInsertion(Node*& lista, int vertice) {
-    Node* novoNo = new Node(vertice);
+void orderedInsertion(Node*& lista, int vertice, float peso=1.0) {
+    Node* novoNo = new Node(vertice, peso);
     if (!lista || lista->valor >= vertice) {
         novoNo->proximo = lista;
         lista = novoNo;
@@ -62,7 +64,7 @@ public:
     TipoDeGrafo tipoDeGrafo;
 
     // Construtor
-    Graph(string filename, TipoDeGrafo graphType) {
+    Graph(string filename, TipoDeGrafo graphType, bool comPesos=false) {
         tipoDeGrafo = graphType;
 
         ifstream arquivo(filename);
@@ -72,31 +74,7 @@ public:
         getline(arquivo, linha);
         numeroDeVertices = stoi(linha);
 
-        if (tipoDeGrafo == TipoDeGrafo::Matriz) {
-            
-            // Inicializa a matriz de adjacência como uma matriz de bool
-            matrizAdj = vector<vector<bool>>(numeroDeVertices, vector<bool>(numeroDeVertices, false));
-
-            // Le o arquivo e constrói a matriz de adjacência
-            while (getline(arquivo, linha)) {
-                istringstream iss(linha);
-            
-                int numero1, numero2;
-                // Extrai os dois números da linha
-                if (iss >> numero1 >> numero2) {
-                    // Verifica se a aresta não é de um vértice para si mesmo
-                    if (numero1 != numero2) {
-                        // Verifica se a aresta não foi adicionada anteriormente
-                        if (!matrizAdj[numero1-1][numero2-1]) {
-                            matrizAdj[numero1 - 1][numero2 - 1] = true;
-                            matrizAdj[numero2 - 1][numero1 - 1] = true;
-                        }
-                    }
-                }
-            }
-            arquivo.close();
-        }
-        else if (tipoDeGrafo == TipoDeGrafo::Lista){
+        if (comPesos == true) {
             listaAdj = vector<Node*>(numeroDeVertices, nullptr);
 
             // Le o arquivo e constrói a lista de adjacência
@@ -104,20 +82,73 @@ public:
                 istringstream iss(linha);
 
                 int numero1, numero2;
-                if (iss >> numero1 >> numero2) {
+                float peso;
+                if (iss >> numero1 >> numero2 >> peso) {
                     // Verifica se a aresta não é de um vértice para si mesmo
                     if (numero1 != numero2) {
                         // Verifica se a aresta não foi adicionada anteriormente
                         if (!existeArestaLista(listaAdj[numero1-1], numero2-1)) {
                             // Insere os vértices em ordem crescente na lista de adjacência
-                            orderedInsertion(listaAdj[numero1 - 1], numero2 - 1);
-                            orderedInsertion(listaAdj[numero2 - 1], numero1 - 1);
+                            orderedInsertion(listaAdj[numero1 - 1], numero2 - 1, peso);
+                            orderedInsertion(listaAdj[numero2 - 1], numero1 - 1, peso);
                         }
                     }    
                 }
             }
             arquivo.close();
+
+
+        } else {
+            if (tipoDeGrafo == TipoDeGrafo::Matriz) {
+            
+                // Inicializa a matriz de adjacência como uma matriz de bool
+                matrizAdj = vector<vector<bool>>(numeroDeVertices, vector<bool>(numeroDeVertices, false));
+
+                // Le o arquivo e constrói a matriz de adjacência
+                while (getline(arquivo, linha)) {
+                    istringstream iss(linha);
+                
+                    int numero1, numero2;
+                    // Extrai os dois números da linha
+                    if (iss >> numero1 >> numero2) {
+                        // Verifica se a aresta não é de um vértice para si mesmo
+                        if (numero1 != numero2) {
+                            // Verifica se a aresta não foi adicionada anteriormente
+                            if (!matrizAdj[numero1-1][numero2-1]) {
+                                matrizAdj[numero1 - 1][numero2 - 1] = true;
+                                matrizAdj[numero2 - 1][numero1 - 1] = true;
+                            }
+                        }
+                    }
+                }
+                arquivo.close();
+            } 
+            else if (tipoDeGrafo == TipoDeGrafo::Lista){
+                listaAdj = vector<Node*>(numeroDeVertices, nullptr);
+
+                // Le o arquivo e constrói a lista de adjacência
+                while (getline(arquivo, linha)) {
+                    istringstream iss(linha);
+
+                    int numero1, numero2;
+                    float peso;
+                    if (iss >> numero1 >> numero2 ) {
+                        // Verifica se a aresta não é de um vértice para si mesmo
+                        if (numero1 != numero2) {
+                            // Verifica se a aresta não foi adicionada anteriormente
+                            if (!existeArestaLista(listaAdj[numero1-1], numero2-1)) {
+                                // Insere os vértices em ordem crescente na lista de adjacência
+                                orderedInsertion(listaAdj[numero1 - 1], numero2 - 1);
+                                orderedInsertion(listaAdj[numero2 - 1], numero1 - 1);
+                            }
+                        }    
+                    }
+                }
+                arquivo.close();
+            }
         }
+
+        
         cout << "Grafo criado com sucesso." << endl;
     }
 
@@ -646,6 +677,115 @@ public:
         arquivoResultado.close();
     }
 
+    int obterVerticeComMenorDistancia(const vector<float>& distancia, const vector<bool>& visitado) {
+        float minDistancia = numeric_limits<float>::infinity();
+        int verticeComMinDistancia = -1;
+
+        for (int i = 0; i < numeroDeVertices; i++) {
+            // cout << !visitado[i] << " " << distancia[i] << " " << minDistancia << endl;
+            if (!visitado[i] && distancia[i] <= minDistancia) {
+                // cout << "Entrou" << endl;
+                minDistancia = distancia[i];
+                verticeComMinDistancia = i;
+            }
+        }
+        return verticeComMinDistancia;
+    }
+
+    void dijkstraSemHeap(int verticeInicial) {
+        vector<float> distancia(numeroDeVertices, numeric_limits<float>::infinity());
+        vector<int> pai(numeroDeVertices, -1);
+        vector<bool> visitado(numeroDeVertices, false);
+
+        distancia[verticeInicial-1] = 0;
+
+        for (int i = 0; i < numeroDeVertices; i++) {
+            // cout << i << endl;
+            int u = obterVerticeComMenorDistancia(distancia, visitado);
+            // cout << u << endl;
+            visitado[u] = true;
+
+            Node* atual = listaAdj[u];
+            while (atual != nullptr) {
+                int v = atual->valor;
+                float peso = atual->peso;
+                // cout << v << " " << peso << endl;
+                if (!visitado[v] && (distancia[u] != numeric_limits<float>::infinity()) && (distancia[u] + peso < distancia[v])) {
+                    distancia[v] = distancia[u] + peso;
+                    pai[v] = u;
+                }
+                atual = atual->proximo;
+            }
+        }
+        /*
+        // Após a execução do BFS, imprime os resultados em um arquivo de texto
+        ofstream arquivoResultado("resultado_dijkstra_sem_heap.txt");
+        for (int i = 0; i < numeroDeVertices; i++) {
+            arquivoResultado << i + 1 << " " << distancia[i] << " " << pai[i] + 1 << endl;
+        }
+        arquivoResultado.close();
+        */
+    }
+
+    void dijkstraComHeap(int verticeInicial) {
+        vector<float> distancia(numeroDeVertices, numeric_limits<float>::infinity());
+        vector<int> pai(numeroDeVertices, -1);
+        vector<bool> visitado(numeroDeVertices, false);
+
+        distancia[verticeInicial - 1] = 0;
+
+        priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> heap;
+        heap.push({0, verticeInicial - 1});
+
+        while (!heap.empty()) {
+            int u = heap.top().second;
+            heap.pop();
+
+            visitado[u] = true;
+
+            Node *atual = listaAdj[u];
+            while (atual != nullptr) {
+                int v = atual->valor;
+                float peso = atual->peso;
+
+                if (!visitado[v] && (distancia[u] + peso < distancia[v])) {
+                    distancia[v] = distancia[u] + peso;
+                    pai[v] = u;
+                    heap.push({distancia[v], v});
+                }
+                atual = atual->proximo;
+            }
+        }
+        
+        // Após a execução do BFS, imprime os resultados em um arquivo de texto
+        ofstream arquivoResultado("resultado_dijkstra_com_heap.txt");
+        for (int i = 0; i < numeroDeVertices; i++) {
+            arquivoResultado << i + 1 << " " << distancia[i] << " " << pai[i] + 1;
+
+            // Imprime o caminho mínimo até o vértice da raiz
+            stack<int> caminho;
+            int destino = i;
+            while (destino != -1) {
+                caminho.push(destino);
+                destino = pai[destino];
+            }
+
+            arquivoResultado << " Caminho: ";
+            while (!caminho.empty()) {
+                arquivoResultado << caminho.top() + 1;
+                caminho.pop();
+                if (!caminho.empty()) {
+                    arquivoResultado << " -> ";
+                }
+            }
+
+            arquivoResultado << endl;
+        }
+        arquivoResultado.close();
+        
+    }
+
+
     void saida(){
         ofstream arquivoResultado("Arquivo_resultado.txt");
         arquivoResultado << "Numero de vertices: " << numeroDeVertices << endl << endl;
@@ -662,47 +802,29 @@ public:
 
 using namespace std;
 
+
 int main() {
-    const int numGraphs = 1; // Número total de arquivos de grafo
-    int limiteIteracoes = 600; // Limite de iterações para o diâmetro aproximado
 
-    ofstream arquivoResultados("diametrosAprox.txt", ios::app);
-
-    for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
-        string nomeArquivo = "grafo_6.txt";
-        Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista);
-
-        // Calcule o diâmetro aproximado do grafo com o limite de iterações
-        int diametroAproximado = grafoLista.diametroAprox(limiteIteracoes);
-
-        // Calcule o diâmetro exato do grafo
-        // int diametroExato = grafoLista.diametro();
-
-        // Escreva os resultados no arquivo à medida que são calculados
-        arquivoResultados << "Grafo " << "6" << ":" << endl;
-        arquivoResultados << "Diâmetro Aproximado (com limite de " << limiteIteracoes << " iterações): " << diametroAproximado << endl;
-        // arquivoResultados << "Diâmetro Exato: " << diametroExato << endl;
-        arquivoResultados << "----------------------------------------" << endl;
-    }
-
-    arquivoResultados.close();
+    Graph grafoLista("rede_colaboracao.txt", TipoDeGrafo::Lista, true);
+    // grafoLista.dijkstraSemHeap(1);
+    grafoLista.dijkstraComHeap(2722);
 
     return 0;
 }
 
 
 // Calculo do tempo medio de execucao do BFS e DFS para cada grafo
-/*
-int main() {
-    const int numGraphs = 6;
+
+int main2() {
+    const int numGraphs = 4;
     const int numTests = 100;
 
-    ofstream arquivoBFS("resultado_bfs.txt");
-    ofstream arquivoDFS("resultado_dfs.txt");
+    ofstream arquivoHeap("resultado_tempo_heap.txt");
+    ofstream arquivoSemHeap("resultado_tempo_sem_heap.txt");
 
     for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
-        string nomeArquivo = "grafo_" + to_string(graphIndex) + ".txt";
-        Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista);
+        string nomeArquivo = "grafo_W_" + to_string(graphIndex) + ".txt";
+        Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista, true);
 
         double elapsed_time = 0;
         srand(static_cast<unsigned int>(time(nullptr)));
@@ -712,12 +834,12 @@ int main() {
             int verticeAleatorio = rand() % numVertices + 1;
 
             clock_t start_time = clock();
-            grafoLista.BFS(verticeAleatorio);
+            grafoLista.dijkstraComHeap(verticeAleatorio);
             clock_t end_time = clock();
             elapsed_time += static_cast<double>(end_time - start_time) / CLOCKS_PER_SEC;
         }
 
-        arquivoBFS << "Tempo médio para BFS " << graphIndex << ": " << elapsed_time / numTests << " segundos" << endl;
+        arquivoHeap << "Tempo médio para Heap " << graphIndex << ": " << elapsed_time / numTests << " segundos" << endl;
 
         elapsed_time = 0;
 
@@ -726,17 +848,16 @@ int main() {
             int verticeAleatorio = rand() % numVertices + 1;
 
             clock_t start_time = clock();
-            grafoLista.DFS(verticeAleatorio);
+            grafoLista.dijkstraSemHeap(verticeAleatorio);
             clock_t end_time = clock();
             elapsed_time += static_cast<double>(end_time - start_time) / CLOCKS_PER_SEC;
         }
 
-        arquivoDFS << "Tempo médio para DFS " << graphIndex << ": " << elapsed_time / numTests << " segundos" << endl;
+        arquivoSemHeap << "Tempo médio sem Heap " << graphIndex << ": " << elapsed_time / numTests << " segundos" << endl;
     }
 
-    arquivoBFS.close();
-    arquivoDFS.close();
+    arquivoHeap.close();
+    arquivoSemHeap.close();
 
     return 0;
 }
-*/

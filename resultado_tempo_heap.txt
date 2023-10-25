@@ -1,0 +1,4 @@
+Tempo médio para Heap 1: 0.11795 segundos
+Tempo médio para Heap 2: 0.68237 segundos
+Tempo médio para Heap 3: 6.46272 segundos
+Tempo médio para Heap 4: 39.9134 segundos

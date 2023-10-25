@@ -1,0 +1,3 @@
+Tempo médio sem Heap 1: 0.28724 segundos
+Tempo médio sem Heap 2: 1.86891 segundos
+Tempo médio sem Heap 3: 29.5904 segundos
