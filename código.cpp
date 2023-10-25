@@ -803,7 +803,7 @@ public:
 using namespace std;
 
 
-int main() {
+int main2() {
 
     Graph grafoLista("rede_colaboracao.txt", TipoDeGrafo::Lista, true);
     // grafoLista.dijkstraSemHeap(1);
@@ -815,7 +815,7 @@ int main() {
 
 // Calculo do tempo medio de execucao do BFS e DFS para cada grafo
 
-int main2() {
+int main() {
     const int numGraphs = 4;
     const int numTests = 100;
 
@@ -824,6 +824,7 @@ int main2() {
 
     for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
         string nomeArquivo = "grafo_W_" + to_string(graphIndex) + ".txt";
+        //string nomeArquivo = "grafo_W_5.txt";
         Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista, true);
 
         double elapsed_time = 0;
