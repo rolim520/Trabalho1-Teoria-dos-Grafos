@@ -54,6 +54,92 @@ bool existeArestaLista(Node* lista, int vertice2) {
     }
     return false;
 }
+// Função para encontrar um caminho aumentante usando BFS
+vector<int> encontrarCaminhoAumentante(const vector<Node*>& grafoResidual, int origem, int destino) {
+    vector<int> caminhoAumentante;
+    queue<int> fila;
+    vector<int> visitado(grafoResidual.size(), 0);
+    vector<int> pai(grafoResidual.size(), -1);
+
+    fila.push(origem);
+    visitado[origem] = 1;
+
+    while (!fila.empty()) {
+        int u = fila.front();
+        fila.pop();
+
+        for (Node* v = grafoResidual[u]; v != nullptr; v = v->proximo) {
+            if (visitado[v->valor] == 0 && v->peso > 0) {
+                pai[v->valor] = u;
+                visitado[v->valor] = 1;
+                fila.push(v->valor);
+            }
+        }
+    }
+
+    if (visitado[destino] == 1) {
+        int v = destino;
+        while (v != -1) {
+            caminhoAumentante.insert(caminhoAumentante.begin(), v);
+            v = pai[v];
+        }
+    }
+
+    return caminhoAumentante;
+}
+
+// Função para encontrar a capacidade residual mínima ao longo do caminho aumentante
+float encontrarCapacidadeResidualMinima(const vector<Node*>& grafoResidual, const vector<int>& caminhoAumentante) {
+    float capacidadeResidualMinima = std::numeric_limits<float>::max();
+
+    for (size_t i = 0; i < caminhoAumentante.size() - 1; ++i) {
+        int u = caminhoAumentante[i];
+        int v = caminhoAumentante[i + 1];
+
+        Node* currentNode = grafoResidual[u];
+        while (currentNode != nullptr) {
+            if (currentNode->valor == v) {
+                capacidadeResidualMinima = std::min(capacidadeResidualMinima, currentNode->peso);
+                break;
+            }
+            currentNode = currentNode->proximo;
+        }
+    }
+
+    return capacidadeResidualMinima;
+}
+
+// Função para atualizar o grafo residual subtraindo a capacidade residual mínima do fluxo nas arestas
+void atualizarGrafoResidual(vector<Node*>& grafoResidual, const vector<int>& caminhoAumentante, float capacidadeResidualMinima) {
+    for (size_t i = 0; i < caminhoAumentante.size() - 1; ++i) {
+        int u = caminhoAumentante[i];
+        int v = caminhoAumentante[i + 1];
+
+        Node* currentNode = grafoResidual[u];
+        while (currentNode != nullptr) {
+            if (currentNode->valor == v) {
+                currentNode->peso -= capacidadeResidualMinima;
+                break;
+            }
+            currentNode = currentNode->proximo;
+        }
+
+        bool arestaInversaEncontrada = false;
+        currentNode = grafoResidual[v];
+        while (currentNode != nullptr) {
+            if (currentNode->valor == u) {
+                currentNode->peso += capacidadeResidualMinima;
+                arestaInversaEncontrada = true;
+                break;
+            }
+            currentNode = currentNode->proximo;
+        }
+
+        if (!arestaInversaEncontrada) {
+            orderedInsertion(grafoResidual[v], u, capacidadeResidualMinima);
+        }
+    }
+}
 
 class Graph {
 public:
@@ -65,7 +151,7 @@ public:
     TipoDeGrafo tipoDeGrafo;
 
     // Construtor
-    Graph(string filename, TipoDeGrafo graphType, bool comPesos=false) {
+    Graph(string filename, TipoDeGrafo graphType, bool comPesos=false, bool direcionado=false) {
         tipoDeGrafo = graphType;
 
         ifstream arquivo(filename);
@@ -75,7 +161,7 @@ public:
         getline(arquivo, linha);
         numeroDeVertices = stoi(linha);
 
-        if (comPesos == true) {
+        if (comPesos == true && direcionado == false){
             listaAdj = vector<Node*>(numeroDeVertices, nullptr);
 
             // Le o arquivo e constrói a lista de adjacência
@@ -101,6 +187,29 @@ public:
             }
             arquivo.close();
 
+        }   if (comPesos == true && direcionado == true){
+            listaAdj = vector<Node*>(numeroDeVertices, nullptr);
+
+            // Le o arquivo e constrói a lista de adjacência
+            while (getline(arquivo, linha)) {
+                istringstream iss(linha);
+                int numero1, numero2;
+                float peso;
+                if (iss >> numero1 >> numero2 >> peso) {
+                    // Verifica se a aresta não é de um vértice para si mesmo
+                    if (numero1 != numero2) {
+                        // Verifica se a aresta não foi adicionada anteriormente
+                        if (!existeArestaLista(listaAdj[numero1-1], numero2-1)) {
+                            if (peso < 0) {
+                                pesosNegativos = true;
+                            }
+                            // Insere os vértices em ordem crescente na lista de adjacência
+                            orderedInsertion(listaAdj[numero1 - 1], numero2 - 1, peso);
+                        }
+                    }    
+                }
+            }
+            arquivo.close();                
 
         } else {
             if (tipoDeGrafo == TipoDeGrafo::Matriz) {
@@ -154,6 +263,28 @@ public:
 
         
         cout << "Grafo criado com sucesso." << endl;
+    }
+
+    // Função para retornar uma cópia da lista de adjacência
+    vector<Node*> getAdjacencyListCopy() {
+        vector<Node*> copyAdjList;
+        for (Node* node : listaAdj) {
+            Node* copyNode = nullptr;
+            Node* copyNodePrev = nullptr;
+            Node* originalNode = node;
+            while (originalNode != nullptr) {
+                Node* newNode = new Node(originalNode->valor, originalNode->peso);
+                if (copyNode == nullptr) {
+                    copyNode = newNode;
+                    copyAdjList.push_back(copyNode);
+                } else {
+                    copyNodePrev->proximo = newNode;
+                }
+                copyNodePrev = newNode;
+                originalNode = originalNode->proximo;
+            }
+        }
+        return copyAdjList;
     }
 
     int numVertices() {
@@ -736,6 +867,7 @@ public:
     }
 
     void dijkstraComHeap(int verticeInicial) {
+
         if (pesosNegativos == true) {
             cout << "O grafo possui pesos negativos. A biblioteca ainda nao implementa caminhos minimos com pesos negativos." << endl;
             return;
@@ -798,6 +930,58 @@ public:
         
     }
 
+    void escreverFluxoMaximoArquivo(const string& nomeArquivo, const vector<int>& caminhoAumentante, float capacidadeResidualMinima) {
+    ofstream arquivo(nomeArquivo, ios::app);  // Abre o arquivo em modo de adição
+
+    // Verifica se o arquivo foi aberto corretamente
+    if (arquivo.is_open()) {
+        // Escreve as informações no arquivo
+        for (size_t i = 0; i < caminhoAumentante.size() - 1; ++i) {
+            int u = caminhoAumentante[i];
+            int v = caminhoAumentante[i + 1];
+            arquivo << u + 1 << " " << v + 1 << " " << capacidadeResidualMinima << endl;
+        }
+
+        // Fecha o arquivo
+        arquivo.close();
+    } else {
+        cout << "Erro ao abrir o arquivo de saída." << endl;
+    }
+}
+
+float fordFulkerson(int origem, int destino, const string& nomeArquivoSaida) {
+
+    float fluxoMaximo = 0;
+
+    // Criar uma cópia do grafo original para armazenar o grafo residual
+    vector<Node*> grafoResidual = getAdjacencyListCopy();
+
+    // Enquanto existir um caminho aumentante de origem até destino no grafoResidual
+    while (true) {
+        // Encontrar um caminho aumentante usando BFS
+        vector<int> caminhoAumentante = encontrarCaminhoAumentante(grafoResidual, origem - 1, destino - 1);
+
+        // Se não houver caminho aumentante, terminar o loop
+        if (caminhoAumentante.empty()) {
+            break;
+        }
+
+        // Encontrar a capacidade residual mínima ao longo do caminho aumentante
+        float capacidadeResidualMinima = encontrarCapacidadeResidualMinima(grafoResidual, caminhoAumentante);
+
+        // Atualizar o grafo residual subtraindo a capacidade residual mínima do fluxo nas arestas
+        atualizarGrafoResidual(grafoResidual, caminhoAumentante, capacidadeResidualMinima);
+
+        // Escrever o fluxo máximo no arquivo externo
+        // escreverFluxoMaximoArquivo(nomeArquivoSaida, caminhoAumentante, capacidadeResidualMinima);
+
+        // Adicionar a capacidade residual mínima ao fluxo máximo
+        fluxoMaximo += capacidadeResidualMinima;
+    }
+
+    // Retornar o fluxo máximo encontrado
+    return fluxoMaximo;
+}
 
     void saida(){
         ofstream arquivoResultado("Arquivo_resultado.txt");
@@ -818,9 +1002,13 @@ using namespace std;
 /*
 int main() {
 
-    Graph grafoLista("grafo_W_1.txt", TipoDeGrafo::Lista, true);
+    int fluxoMax = 0;
+
+    Graph grafoLista("grafo_rf_1.txt", TipoDeGrafo::Lista, true, true);
     // grafoLista.dijkstraSemHeap(1);
-    grafoLista.dijkstraComHeap(10);
+    fluxoMax = grafoLista.fordFulkerson(1, 2, "resultado_fluxo_maximo.txt");
+
+    cout << "Fluxo maximo: " << fluxoMax << endl;
 
     return 0;
 }
@@ -828,50 +1016,36 @@ int main() {
 
 // Calculo do tempo medio de execucao do BFS e DFS para cada grafo
 
-int main() {
-    const int numGraphs = 4;
-    const int numTests = 100;
 
-    ofstream arquivoHeap("resultado_tempo_heap.txt");
-    ofstream arquivoSemHeap("resultado_tempo_sem_heap.txt");
+int main() {
+    const int numGraphs = 6;
+    const int numExecutions = 10;
+
+    ofstream arquivoResultado("resultado_tempo_fordfulkerson.txt");
 
     for (int graphIndex = 1; graphIndex <= numGraphs; graphIndex++) {
-        string nomeArquivo = "grafo_W_" + to_string(graphIndex) + ".txt";
-        // string nomeArquivo = "grafo_W_1.txt";
-        Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista, true);
+        string nomeArquivo = "grafo_rf_" + to_string(graphIndex) + ".txt";
+        Graph grafoLista(nomeArquivo, TipoDeGrafo::Lista, true, true);
 
         double elapsed_time = 0;
-        srand(static_cast<unsigned int>(time(nullptr)));
 
-        for (int i = 0; i < numTests; i++) {
-            int numVertices = grafoLista.numVertices();
-            int verticeAleatorio = rand() % numVertices + 1;
-
-            clock_t start_time = clock();
-            grafoLista.dijkstraComHeap(verticeAleatorio);
-            clock_t end_time = clock();
-            elapsed_time += static_cast<double>(end_time - start_time) / CLOCKS_PER_SEC;
-        }
-
-        arquivoHeap << "Tempo médio para Heap " << graphIndex << ": " << elapsed_time / numTests << " segundos" << endl;
-
-        elapsed_time = 0;
-
-        for (int i = 0; i < numTests; i++) {
-            int numVertices = grafoLista.numVertices();
-            int verticeAleatorio = rand() % numVertices + 1;
+        for (int exec = 0; exec < numExecutions; exec++) {
+            int origem = 1;  // Defina a origem conforme necessário
+            int destino = 2; // Defina o destino conforme necessário
 
             clock_t start_time = clock();
-            grafoLista.dijkstraSemHeap(verticeAleatorio);
+            float fluxoMaximo = grafoLista.fordFulkerson(origem, destino, "resultado_fluxo_maximo_" + to_string(graphIndex) + "_" + to_string(exec) + ".txt");
             clock_t end_time = clock();
             elapsed_time += static_cast<double>(end_time - start_time) / CLOCKS_PER_SEC;
+
+            // Você pode imprimir ou salvar o fluxo máximo se quiser
+            cout << "Fluxo máximo para execução " << exec << " do grafo " << graphIndex << ": " << fluxoMaximo << endl;
         }
 
-        arquivoSemHeap << "Tempo médio sem Heap " << graphIndex << ": " << elapsed_time / numTests << " segundos" << endl;
+        arquivoResultado << "Tempo médio para Ford-Fulkerson " << graphIndex << ": " << elapsed_time / numExecutions << " segundos" << endl;
     }
 
-    arquivoHeap.close();
-    arquivoSemHeap.close();
+    arquivoResultado.close();
 
     return 0;
 }
