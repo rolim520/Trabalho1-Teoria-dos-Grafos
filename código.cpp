@@ -55,7 +55,7 @@ bool existeArestaLista(Node* lista, int vertice2) {
     return false;
 }
 // Função para encontrar um caminho aumentante usando BFS
-vector<int> encontrarCaminhoAumentante(const vector<Node*>& grafoResidual, int origem, int destino) {
+vector<int> obterCaminhoAumentante(const vector<Node*>& grafoResidual, int origem, int destino) {
     vector<int> caminhoAumentante;
     queue<int> fila;
     vector<int> visitado(grafoResidual.size(), 0);
@@ -89,7 +89,7 @@ vector<int> encontrarCaminhoAumentante(const vector<Node*>& grafoResidual, int o
 }
 
 // Função para encontrar a capacidade residual mínima ao longo do caminho aumentante
-float encontrarCapacidadeResidualMinima(const vector<Node*>& grafoResidual, const vector<int>& caminhoAumentante) {
+float obterCapacidadeResidualMinima(const vector<Node*>& grafoResidual, const vector<int>& caminhoAumentante) {
     float capacidadeResidualMinima = std::numeric_limits<float>::max();
 
     for (size_t i = 0; i < caminhoAumentante.size() - 1; ++i) {
@@ -266,7 +266,7 @@ public:
     }
 
     // Função para retornar uma cópia da lista de adjacência
-    vector<Node*> getAdjacencyListCopy() {
+    vector<Node*> copiarListaDeAdjacencia() {
         vector<Node*> copyAdjList;
         for (Node* node : listaAdj) {
             Node* copyNode = nullptr;
@@ -954,12 +954,12 @@ float fordFulkerson(int origem, int destino, const string& nomeArquivoSaida) {
     float fluxoMaximo = 0;
 
     // Criar uma cópia do grafo original para armazenar o grafo residual
-    vector<Node*> grafoResidual = getAdjacencyListCopy();
+    vector<Node*> grafoResidual = copiarListaDeAdjacencia();
 
     // Enquanto existir um caminho aumentante de origem até destino no grafoResidual
     while (true) {
         // Encontrar um caminho aumentante usando BFS
-        vector<int> caminhoAumentante = encontrarCaminhoAumentante(grafoResidual, origem - 1, destino - 1);
+        vector<int> caminhoAumentante = obterCaminhoAumentante(grafoResidual, origem - 1, destino - 1);
 
         // Se não houver caminho aumentante, terminar o loop
         if (caminhoAumentante.empty()) {
@@ -967,7 +967,7 @@ float fordFulkerson(int origem, int destino, const string& nomeArquivoSaida) {
         }
 
         // Encontrar a capacidade residual mínima ao longo do caminho aumentante
-        float capacidadeResidualMinima = encontrarCapacidadeResidualMinima(grafoResidual, caminhoAumentante);
+        float capacidadeResidualMinima = obterCapacidadeResidualMinima(grafoResidual, caminhoAumentante);
 
         // Atualizar o grafo residual subtraindo a capacidade residual mínima do fluxo nas arestas
         atualizarGrafoResidual(grafoResidual, caminhoAumentante, capacidadeResidualMinima);
