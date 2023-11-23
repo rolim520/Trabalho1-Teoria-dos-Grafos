@@ -55,7 +55,7 @@ bool existeArestaLista(Node* lista, int vertice2) {
     return false;
 }
 // Função para encontrar um caminho aumentante usando BFS
-vector<int> obterCaminhoAumentante(const vector<Node*>& grafoResidual, int origem, int destino) {
+vector<int> calcularCaminhoBFS(const vector<Node*>& grafoResidual, int origem, int destino) {
     vector<int> caminhoAumentante;
     queue<int> fila;
     vector<int> visitado(grafoResidual.size(), 0);
@@ -89,7 +89,7 @@ vector<int> obterCaminhoAumentante(const vector<Node*>& grafoResidual, int orige
 }
 
 // Função para encontrar a capacidade residual mínima ao longo do caminho aumentante
-float obterCapacidadeResidualMinima(const vector<Node*>& grafoResidual, const vector<int>& caminhoAumentante) {
+float bottleneck(const vector<Node*>& grafoResidual, const vector<int>& caminhoAumentante) {
     float capacidadeResidualMinima = std::numeric_limits<float>::max();
 
     for (size_t i = 0; i < caminhoAumentante.size() - 1; ++i) {
@@ -266,7 +266,7 @@ public:
     }
 
     // Função para retornar uma cópia da lista de adjacência
-    vector<Node*> copiarListaDeAdjacencia() {
+    vector<Node*> criarGrafoResidual() {
         vector<Node*> copyAdjList;
         for (Node* node : listaAdj) {
             Node* copyNode = nullptr;
@@ -949,17 +949,17 @@ public:
     }
 }
 
-float fordFulkerson(int origem, int destino, const string& nomeArquivoSaida) {
+float fordFulkerson(int origem, int destino, bool saidaArquivo, const string& nomeArquivoSaida) {
 
     float fluxoMaximo = 0;
 
     // Criar uma cópia do grafo original para armazenar o grafo residual
-    vector<Node*> grafoResidual = copiarListaDeAdjacencia();
+    vector<Node*> grafoResidual = criarGrafoResidual();
 
     // Enquanto existir um caminho aumentante de origem até destino no grafoResidual
     while (true) {
         // Encontrar um caminho aumentante usando BFS
-        vector<int> caminhoAumentante = obterCaminhoAumentante(grafoResidual, origem - 1, destino - 1);
+        vector<int> caminhoAumentante = calcularCaminhoBFS(grafoResidual, origem - 1, destino - 1);
 
         // Se não houver caminho aumentante, terminar o loop
         if (caminhoAumentante.empty()) {
@@ -967,13 +967,15 @@ float fordFulkerson(int origem, int destino, const string& nomeArquivoSaida) {
         }
 
         // Encontrar a capacidade residual mínima ao longo do caminho aumentante
-        float capacidadeResidualMinima = obterCapacidadeResidualMinima(grafoResidual, caminhoAumentante);
+        float capacidadeResidualMinima = bottleneck(grafoResidual, caminhoAumentante);
 
         // Atualizar o grafo residual subtraindo a capacidade residual mínima do fluxo nas arestas
         atualizarGrafoResidual(grafoResidual, caminhoAumentante, capacidadeResidualMinima);
 
         // Escrever o fluxo máximo no arquivo externo
-        // escreverFluxoMaximoArquivo(nomeArquivoSaida, caminhoAumentante, capacidadeResidualMinima);
+        if (saidaArquivo) {
+            escreverFluxoMaximoArquivo(nomeArquivoSaida, caminhoAumentante, capacidadeResidualMinima);
+        }
 
         // Adicionar a capacidade residual mínima ao fluxo máximo
         fluxoMaximo += capacidadeResidualMinima;
@@ -1006,7 +1008,7 @@ int main() {
 
     Graph grafoLista("grafo_rf_1.txt", TipoDeGrafo::Lista, true, true);
     // grafoLista.dijkstraSemHeap(1);
-    fluxoMax = grafoLista.fordFulkerson(1, 2, "resultado_fluxo_maximo.txt");
+    fluxoMax = grafoLista.fordFulkerson(1, 2, true, "resultado_fluxo_maximo.txt");
 
     cout << "Fluxo maximo: " << fluxoMax << endl;
 
@@ -1019,7 +1021,7 @@ int main() {
 
 int main() {
     const int numGraphs = 6;
-    const int numExecutions = 10;
+    const int numExecutions = 1;
 
     ofstream arquivoResultado("resultado_tempo_fordfulkerson.txt");
 
@@ -1034,7 +1036,7 @@ int main() {
             int destino = 2; // Defina o destino conforme necessário
 
             clock_t start_time = clock();
-            float fluxoMaximo = grafoLista.fordFulkerson(origem, destino, "resultado_fluxo_maximo_" + to_string(graphIndex) + "_" + to_string(exec) + ".txt");
+            float fluxoMaximo = grafoLista.fordFulkerson(origem, destino, true, "resultado_fluxo_maximo_" + to_string(graphIndex) + "_" + to_string(exec) + ".txt");
             clock_t end_time = clock();
             elapsed_time += static_cast<double>(end_time - start_time) / CLOCKS_PER_SEC;
 
